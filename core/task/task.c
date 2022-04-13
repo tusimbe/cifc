@@ -29,7 +29,9 @@
 #include "hal.h"
 #include "chprintf.h"
 #include "system.h"
+#ifndef UNIT_TEST
 #include "usbcfg.h"
+#endif
 #include "task.h"
 
 #define TASK_NAME_INITIALIZER(_name) .name = #_name
@@ -48,6 +50,7 @@
 
 void test_func0(void)
 {
+#ifndef UNIT_TEST
     static bool flag = false;
 
     if (flag) {
@@ -58,11 +61,13 @@ void test_func0(void)
     }
     
     flag = !flag;
-
+#endif
 }
 
 void test_func1(void)
 {
+#ifndef UNIT_TEST
+
     static bool flag = false;
 
     if (flag) {
@@ -73,10 +78,12 @@ void test_func1(void)
     }
     
     flag = !flag;
+#endif
 }
 
 void test_func2(void)
 {
+#ifndef UNIT_TEST
     static bool flag = false;
 
     if (flag) {
@@ -87,11 +94,15 @@ void test_func2(void)
     }
     
     flag = !flag;
+#endif
+
 }
 
 
 void test_func3(void)
 {
+#ifndef UNIT_TEST
+
     static bool flag = false;
 
     if (flag) {
@@ -102,6 +113,8 @@ void test_func3(void)
     }
     
     flag = !flag;
+#endif
+
 }
 
 

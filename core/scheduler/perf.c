@@ -29,7 +29,9 @@
 #include "system.h"
 #include "perf.h"
 #include "shell.h"
+#ifndef UNIT_TEST
 #include "usbcfg.h"
+#endif
 #include "task.h"
 #include "scheduler.h"
 #include <math.h>

@@ -1,13 +1,13 @@
 /*!
  *****************************************************************************
  *
- *  Copyright © 2016-2022 CHASING INNOVATION . All Rights Reserved.
+ *  Copyright © 2017-2018 CHASING INNOVATION. All Rights Reserved.
  *
- * \file      qmc5883l.h
+ * \file      matrix3.h
  * \author    johnson@chasing-innovation.com
  * \version   1.0
- * \date      2022年4月6日星期三
- * \brief     qmc5883l驱动
+ * \date      2022年4月13日星期三
+ * \brief     3x3矩阵运算
  *
  *----------------------------------------------------------------------------
  * \attention
@@ -18,17 +18,18 @@
 
 /*****************************************************************************
  change history: 
-    1.date  : 2022年4月6日星期三
+    1.date  : 2022年4月13日星期三
       author: johnson@chasing-innovation.com
       change: create file
 
 *****************************************************************************/
-#ifndef _DRV_QMC5883L_H_
-#define _DRV_QMC5883L_H_
+#ifndef _MATRIX3_H_
+#define _MATRIX3_H_
 
-int qmc5883l_init(uint32_t busid);
-void qmc5883l_cmd(BaseSequentialStream *chp, int argc, char *argv[]);
-void hal_compass_timer(void);
+typedef struct stru_matrix3 {
+    float m[3][3];
+} MATRIX3;
 
+VECTOR3 matrix3_mul_vectro3(MATRIX3 *m3, VECTOR3 *v);
 
 #endif

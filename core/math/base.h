@@ -64,5 +64,6 @@ static inline float constrain_float(const float amt, const float low, const floa
 
     return amt;
 }
+
 #endif
 

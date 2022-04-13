@@ -34,9 +34,13 @@
 
 #define MHZ (1000 * 1000)
 
-
+#ifndef UNIT_TEST
 #define debug(level, fmt, args...)   do {chprintf((BaseSequentialStream *)&SDU1, fmt, ##args);} while(0)
 #define printk(fmt, args...)   do {chprintf((BaseSequentialStream *)&SDU1, fmt, ##args);} while(0)
+#else
+#define debug(level, fmt, args...)   
+#define printk(fmt, args...)  
+#endif
 
 uint32_t micros(void);
 uint32_t millis(void);

@@ -30,8 +30,10 @@
 #include "system.h"
 #include "shell.h"
 #include "scheduler.h"
+#include "vector3.h"
 #include "drv_i2c.h"
 #include "qmc5883l.h"
+#include "compass.h"
 #include <string.h>
 
 #define QMC5883L_I2C_ADDR 0x0D
@@ -144,18 +146,18 @@ void qmc5883l_cmd(BaseSequentialStream *chp, int argc, char *argv[])
         printk("qmc5883l init chip id:0x%x.\r\n", chip_id); 
 
     } else if (cmd_type == 2) {
-        _timer();
+        hal_compass_timer();
     }
 
     return;
 }
 
-void _timer(void)
+void hal_compass_timer(void)
 {
     uint8_t buf[6];
     uint16_t magData[3];
 
-    //const float range_scale = 1000.0f / 3000.0f;
+    const float range_scale = 1000.0f / 3000.0f;
 
     uint8_t status;
     if(!drv_i2c_read_registers(g_drvp_i2c, QMC5883L_REG_STATUS, &status, 1)){
@@ -176,14 +178,18 @@ void _timer(void)
     magData[2] = (int16_t)(buf[5] << 8 | buf[4]);
 
 
-#if 1
+#if 0
     printk("mag.x:%d\t", magData[0]);
     printk("mag.y:%d\t", magData[1]);
     printk("mag.z:%d\r\n", magData[2]);
 #endif
 
-    //Vector3f field = Vector3f{x * range_scale , y * range_scale, z * range_scale };
-
+    VECTOR3 field;
+    field.v[0] = magData[0] * range_scale;
+    field.v[1] = magData[1] * range_scale;
+    field.v[2] = magData[2] * range_scale;
+    
+    compass_notify_new_data(&field);
 }
 
 

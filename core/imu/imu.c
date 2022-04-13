@@ -29,16 +29,17 @@
 #include "chprintf.h"
 #include "system.h"
 #include "shell.h"
+#ifndef UNIT_TEST
 #include "usbcfg.h"
+#endif
 #include "scheduler.h"
 #include "base.h"
 #include "lpf2.h"
 #include "imu.h"
+#include "vector3.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-#define timing_printf(fmt, args...)   do {chprintf((BaseSequentialStream *)&SDU1, fmt, ##args);} while (0)
 
 // has wait_for_sample() found a sample?
 bool _have_sample;
@@ -68,12 +69,12 @@ float  _accel_raw_sample_rates;
 float  _gyro_raw_sample_rates;
 
 /* raw imu data */
-float  _gyro[3];
-float  _accel[3];
+VECTOR3  _gyro;
+VECTOR3  _accel;
 
 /* data passed through lfp2 */
-float  _accel_filtered[3];
-float  _gyro_filtered[3];
+VECTOR3  _accel_filtered;
+VECTOR3  _gyro_filtered;
 
 void *accel_lpf2[3];
 void *gyro_lpf2[3];
@@ -91,32 +92,34 @@ uint16_t _sample_gyro_count;
 uint32_t _sample_gyro_start_us;
 
 // delta velocity accumulator
-float _delta_velocity_acc[3];
+VECTOR3 _delta_velocity_acc;
 // time accumulator for delta velocity accumulator
 float _delta_velocity_acc_dt;
 
 
 // Most recent accelerometer reading
-float _accel[3];
-float _delta_velocity[3];
+VECTOR3 _accel;
+VECTOR3 _delta_velocity;
 float _delta_velocity_dt;
 bool _delta_velocity_valid;
 
-float _delta_angle_acc_dt;
-float _delta_angle_acc[3];
-
 // Most recent gyro reading
-float _gyro[3];
-float _delta_angle[3];
+VECTOR3 _gyro;
+VECTOR3 _delta_angle;
 float _delta_angle_dt;
 bool _delta_angle_valid;
+
+// time accumulator for delta angle accumulator
+float _delta_angle_acc_dt;
+VECTOR3 _delta_angle_acc;
+VECTOR3 _last_delta_angle;
+VECTOR3 _last_raw_gyro;
+
 
 uint32_t imu_debug;
 
 static void _update_gyro(void);
 static void _update_accel(void);
-void _copy3f(float dst[3], float src[3]);
-void _zero3f(float v[3]);
 
 
 // return true if the sensors are still converging and sampling rates could change significantly
@@ -206,21 +209,21 @@ void imu_wait_for_sample(void)
         scheduler_delay_microseconds_boost(wait_usec);
         uint32_t now2 =  micros();
         if ((int32_t)(_next_sample_usec - now2) > 100) {
-            timing_printf("shortsleep %u wait_usec=%u\n", (_next_sample_usec - now2), wait_usec);
+            printk("shortsleep %u wait_usec=%u\n", (_next_sample_usec - now2), wait_usec);
         }
         if ((int32_t)(now2 - _next_sample_usec) > 400) {
-            timing_printf("longsleep %u wait_usec=%u\n", (now2 - _next_sample_usec), wait_usec);
+            printk("longsleep %u wait_usec=%u\n", (now2 - _next_sample_usec), wait_usec);
         }
         _next_sample_usec += _sample_period_usec;
     } else if ((int32_t)(now - _next_sample_usec) < (int32_t)(_sample_period_usec/8)) {
         // we've overshot, but only by a small amount, keep on
         // schedule with no delay
-        timing_printf("overshoot1 %u\n", (unsigned)(now-_next_sample_usec));
+        printk("overshoot1 %u\n", (unsigned)(now-_next_sample_usec));
         _next_sample_usec += _sample_period_usec;
     } else {
         // we've overshot by a larger amount, re-zero scheduling with
         // no delay
-        timing_printf("overshoot2 %u\n", (unsigned)(now-_next_sample_usec));
+        printk("overshoot2 %u\n", (unsigned)(now-_next_sample_usec));
         _next_sample_usec = now + _sample_period_usec;
     }
 
@@ -275,9 +278,9 @@ void imu_update(void)
     _update_gyro();
 
     // clear accumulators
-    _zero3f(_delta_velocity_acc);
+    vector3_zero(&_delta_velocity_acc);
     _delta_velocity_acc_dt = 0;
-    _zero3f(_delta_angle_acc);
+    vector3_zero(&_delta_angle_acc);
     _delta_angle_acc_dt = 0;
 
     _last_update_usec = micros();
@@ -379,24 +382,19 @@ void imu_notify_new_accel_raw_sample(float accel[], float gyro[], uint64_t sampl
     
     // delta velocity
     for (uint8_t i = 0; i < 3; i++) {
-        _delta_velocity_acc[i] += accel[i] * dt;
+        _delta_velocity_acc.v[i] += accel[i] * dt;
     }
     _delta_velocity_acc_dt += dt;
 
     for (uint8_t i = 0; i < 3; i++) {
-        _accel_filtered[i] = lpf2_apply(accel_lpf2[i], accel[i]);
-        if (isnan(_accel_filtered[i])  || isinf(_accel_filtered[i])) {
+        _accel_filtered.v[i] = lpf2_apply(accel_lpf2[i], accel[i]);
+        if (isnan(_accel_filtered.v[i])  || isinf(_accel_filtered.v[i])) {
             lpf2_reset(accel_lpf2[i]);
         }
     }
     if (imu_debug == 1) {
         printk("a(%4.4f, %4.4f, %4.4f)\r", 
-            _accel_filtered[0], _accel_filtered[1], _accel_filtered[2]);
-    }
-
-    if (imu_debug == 2) {
-        printk("a(%4.4f, %4.4f, %4.4f)\r", 
-            _accel_filtered[0], _accel_filtered[1], _accel_filtered[2]);
+            _accel_filtered.v[0], _accel_filtered.v[1], _accel_filtered.v[2]);
     }
 
     _new_accel_data = true;
@@ -408,9 +406,9 @@ void imu_notify_new_gyro_raw_sample(float gyro[], uint64_t sample_us)
     float dt;
     uint64_t last_sample_us;
     uint64_t now;
+    uint8_t i;
 
     _update_sensor_rate(&_sample_gyro_count, &_sample_gyro_start_us, &_gyro_raw_sample_rates);
-
     last_sample_us = _gyro_last_sample_us;
 
     /*
@@ -436,72 +434,68 @@ void imu_notify_new_gyro_raw_sample(float gyro[], uint64_t sample_us)
         sample_us = _gyro_last_sample_us;
     }
 
-#if 0
+
     // compute delta angle
-    float delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
+    VECTOR3 delta_angle;
+
+    for (i = 0; i < 3; i++) {
+        delta_angle.v[i] = (gyro[i] + _last_raw_gyro.v[i]) * 0.5f * dt;
+    }
 
     // compute coning correction
     // see page 26 of:
     // Tian et al (2010) Three-loop Integration of GPS and Strapdown INS with Coning and Sculling Compensation
     // Available: http://www.sage.unsw.edu.au/snap/publications/tian_etal2010b.pdf
     // see also examples/coning.py
-    Vector3f delta_coning = (_imu._delta_angle_acc[instance] +
-                             _imu._last_delta_angle[instance] * (1.0f / 6.0f));
-    delta_coning = delta_coning % delta_angle;
-    delta_coning *= 0.5f;
-#endif
+    VECTOR3 delta_coning;
+    VECTOR3 tmp;
+
+    tmp = vector3_product(&_last_delta_angle, (1.0f / 6.0f));
+    delta_coning = vector3_add(&_delta_angle_acc, &tmp);
+    delta_coning = vector3_cross(&delta_coning, &delta_angle);
+    delta_coning = vector3_product(&delta_coning, 0.5f);
+
     {
         now = micros64();
 
         if (now - last_sample_us > 100000U) {
             // zero accumulator if sensor was unhealthy for 0.1s
-            _zero3f(_delta_angle_acc);
+            vector3_zero(&_delta_angle_acc);
             _delta_angle_acc_dt = 0;
             dt = 0;
-            //_zero3f(delta_angle);
+            vector3_zero(&delta_angle);
         }
 
         // integrate delta angle accumulator
         // the angles and coning corrections are accumulated separately in the
         // referenced paper, but in simulation little difference was found between
         // integrating together and integrating separately (see examples/coning.py)
-        //_imu._delta_angle_acc[instance] += delta_angle + delta_coning;
+        tmp = vector3_add(&delta_angle, &delta_coning);
+        _delta_angle_acc = vector3_add(&_delta_angle_acc, &tmp);
         _delta_angle_acc_dt += dt;
 
         // save previous delta angle for coning correction
-        //_imu._last_delta_angle[instance] = delta_angle;
-        //_imu._last_raw_gyro[instance] = gyro;
+        vector3_copy(&_last_delta_angle, &delta_angle);
+        tmp.v[0] = gyro[0];
+        tmp.v[1] = gyro[1];
+        tmp.v[2] = gyro[2];
+        vector3_copy(&_last_raw_gyro, &tmp);
 
         // apply the low pass filter
-        float gyro_filtered[3];
+        VECTOR3 gyro_filtered;
         for (uint8_t i = 0; i < 3; i++) {
-            gyro_filtered[i] = lpf2_apply(gyro_lpf2[i], gyro[i]);
+            gyro_filtered.v[i] = lpf2_apply(gyro_lpf2[i], gyro[i]);
 
             // if the filtering failed in any way then reset the filters and keep the old value
-            if (isnan(gyro_filtered[i]) || isinf(gyro_filtered[i])) {
+            if (isnan(gyro_filtered.v[i]) || isinf(gyro_filtered.v[i])) {
                 lpf2_reset(gyro_lpf2[i]);
             } else {
-                _copy3f(_gyro_filtered, gyro_filtered);
+                vector3_copy(&_gyro_filtered, &gyro_filtered);
             }
         }
         _new_gyro_data = true;
     }
 }
-
-void _zero3f(float v[3])
-{
-    v[0] = v[1] = v[2] = 0;
-}
-
-void _copy3f(float dst[3], float src[3])
-{
-    for (uint8_t i = 0; i < 3; i++) {
-        dst[i] = src[i];
-    }
-
-    return;
-}
-
 
 /*
   common gyro update function for all backends
@@ -509,10 +503,10 @@ void _copy3f(float dst[3], float src[3])
 static void _update_gyro(void)
 {    
     if (_new_gyro_data) {
-        _copy3f(_gyro, _gyro_filtered);
+        vector3_copy(&_gyro, &_gyro_filtered);
         
         // publish delta angle
-        _copy3f(_delta_angle, _delta_angle_acc);
+        vector3_copy(&_delta_angle, &_delta_angle_acc);
         _delta_angle_dt = _delta_angle_acc_dt;
         _delta_angle_valid = true;
         _new_gyro_data = false;
@@ -526,10 +520,10 @@ static void _update_accel(void)
 {    
 
     if (_new_accel_data) {
-        _copy3f(_accel, _accel_filtered);
+        vector3_copy(&_accel, &_accel_filtered);
         
         // publish delta velocity
-        _copy3f(_delta_velocity, _delta_velocity_acc);
+        vector3_copy(&_delta_velocity, &_delta_velocity_acc);
         _delta_velocity_dt = _delta_velocity_acc_dt;
         _delta_velocity_valid = true;
 
@@ -537,13 +531,18 @@ static void _update_accel(void)
     }
 }
 
+float get_delta_time(void)
+{ 
+    return MIN(_delta_time, _loop_delta_t_max); 
+}
+
 /*
   get delta velocity if available
 */
-bool imu_get_delta_velocity(float delta_velocity[])
+bool imu_get_delta_velocity(VECTOR3 *delta_velocity)
 {
     if (_delta_velocity_valid) {
-        _copy3f(delta_velocity, _delta_velocity);
+        vector3_copy(delta_velocity, &_delta_velocity);
         return true;
     } 
     return false;
@@ -557,6 +556,8 @@ float imu_get_delta_velocity_dt(void)
     float ret;
     if (_delta_velocity_valid) {
         ret = _delta_velocity_dt;
+    } else {
+        ret = get_delta_time();
     }
     
     ret = MIN(ret, _loop_delta_t_max);
@@ -567,7 +568,7 @@ void imu_print_data(void)
 {
     if (imu_debug == 3) {
         printk("a(%4.4f, %4.4f, %4.4f) g(%4.4f, %4.4f, %4.4f)\r", 
-            _accel[0], _accel[1], _accel[2], _gyro[0], _gyro[1], _gyro[2]);
+            _accel.v[0], _accel.v[1], _accel.v[2], _gyro.v[0], _gyro.v[1], _gyro.v[2]);
     }
 }
 

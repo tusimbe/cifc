@@ -30,11 +30,15 @@
 #include "perf.h"
 #include "shell.h"
 #include "scheduler.h"
+#ifndef UNIT_TEST
 #include "usbcfg.h"
+#endif
 #include "imu.h"
 #include "task.h"
+#ifndef UNIT_TEST
 #include "mpu6000.h"
 #include "qmc5883l.h"
+#endif
 #include "ahrs.h"
 #include <math.h>
 #include <float.h>
@@ -52,6 +56,7 @@
 
 void sche_cmd(BaseSequentialStream *chp, int argc, char *argv[]);
 
+#ifndef UNIT_TEST
 static const ShellCommand commands[] = {
 	{"scher", sche_cmd},
 	{"perf", perf_cmd},
@@ -65,6 +70,7 @@ static const ShellConfig shell_cfg1 = {
   (BaseSequentialStream *)&SDU1,
   commands
 };
+#endif
 
  
 static thread_t* daemon_task;
@@ -446,6 +452,7 @@ void scheduler_loop(void)
 
 void scheduler_shellThdCreate(void)
 {
+#ifndef UNIT_TEST
 	static bool isCreate = false;
     if ((!isCreate) && (SDU1.config->usbp->state == USB_ACTIVE)) {
 		thread_t *shelltp = chThdCreateFromHeap(NULL, SHELL_WA_SIZE,
@@ -457,7 +464,9 @@ void scheduler_shellThdCreate(void)
 			debug(0, "shell thread create failed!\r\n");
 		}
     }
+
 	return;
+#endif
 }
 
 void scheduler_init(void)
