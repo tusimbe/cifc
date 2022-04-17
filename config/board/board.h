@@ -243,7 +243,7 @@
 #define LINE_LCD_B7                 PAL_LINE(GPIOB, 9U)
 #define LINE_LCD_G4                 PAL_LINE(GPIOB, 10U)
 #define LINE_LCD_G5                 PAL_LINE(GPIOB, 11U)
-#define LINE_OTG_HS_ID              PAL_LINE(GPIOB, 12U)
+#define LINE_FRAM_CS                PAL_LINE(GPIOB, GPIOB_FRAM_CS)
 #define LINE_OTG_HS_VBUS            PAL_LINE(GPIOB, 13U)
 #define LINE_OTG_HS_DM              PAL_LINE(GPIOB, 14U)
 #define LINE_OTG_HS_DP              PAL_LINE(GPIOB, 15U)
@@ -531,7 +531,7 @@
                                      PIN_OSPEED_MEDIUM(GPIOB_PIN9) |        \
                                      PIN_OSPEED_MEDIUM(GPIOB_UART3_TX) |        \
                                      PIN_OSPEED_MEDIUM(GPIOB_UART3_RX) |        \
-                                     PIN_OSPEED_VERYLOW(GPIOB_FRAM_CS) |     \
+                                     PIN_OSPEED_MEDIUM(GPIOB_FRAM_CS) |     \
                                      PIN_OSPEED_MEDIUM(GPIOB_SPI2_FRAM_CLK) |\
                                      PIN_OSPEED_MEDIUM(GPIOB_SPI2_FRAM_MISO) |     \
                                      PIN_OSPEED_MEDIUM(GPIOB_SPI2_FRAM_MOSI))
@@ -548,7 +548,7 @@
                                      PIN_PUPDR_FLOATING(GPIOB_UART3_TX) |     \
                                      PIN_PUPDR_FLOATING(GPIOB_UART3_RX) |     \
                                      PIN_PUPDR_PULLUP(GPIOB_FRAM_CS) |  \
-                                     PIN_PUPDR_FLOATING(GPIOB_SPI2_FRAM_CLK) |\
+                                     PIN_PUPDR_PULLUP(GPIOB_SPI2_FRAM_CLK) |\
                                      PIN_PUPDR_FLOATING(GPIOB_SPI2_FRAM_MISO) |  \
                                      PIN_PUPDR_FLOATING(GPIOB_SPI2_FRAM_MOSI))
 #define VAL_GPIOB_ODR               (PIN_ODR_HIGH(GPIOB_LED_PWM1) |           \

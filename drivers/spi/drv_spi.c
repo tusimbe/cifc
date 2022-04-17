@@ -46,6 +46,9 @@
 
 typedef struct {
     uint32_t busid;
+    uint32_t cs;
+    uint32_t spimode;
+    SPIConfig config;
     bool started;
     bool (*transfer)(void *p, const uint8_t * send, 
                 uint32_t send_len, uint8_t * recv, uint32_t len);
@@ -90,7 +93,6 @@ static SPIDriver *drv_bus_table[] =
 };
 
 uint32_t  drv_bus_size = (sizeof(drv_bus_table) / sizeof(drv_bus_table[0]));
-SPIConfig g_config;
 
 static uint32_t derive_freq_flag_bus(uint8_t busid, uint32_t _frequency);
 
@@ -186,7 +188,7 @@ void* drv_spi_create(uint32_t busid)
     if (busid >= drv_bus_size) {
         printk("[%s, %d] busid %d is bigger than bus table size %d.\r\n", 
                                     __func__, __LINE__, busid, drv_bus_size);
-        return false;
+        return NULL;
     }
 
     drv_spi_vmt *p = malloc(sizeof(drv_spi_vmt));
@@ -194,8 +196,11 @@ void* drv_spi_create(uint32_t busid)
         printk("[%s, %d] no memory.\r\n", __func__, __LINE__);
         return NULL;
     }
-    
+
+    memset(&p->config, 0, sizeof(SPIConfig));
     p->busid = busid;
+    p->cs = 0;
+    p->spimode = SPIDEV_MODE3;
     p->started = false;
     p->transfer = transfer;
 
@@ -203,7 +208,7 @@ void* drv_spi_create(uint32_t busid)
 }
 
 
-bool _transfer(void *p, const uint8_t *send, 
+static bool _transfer(void *p, const uint8_t *send, 
                 uint32_t send_len, uint8_t *recv, uint32_t recv_len)
 {
     bool ret;
@@ -234,10 +239,11 @@ bool drv_spi_transfer(void *p, const uint8_t *send,
     return _transfer(p, send, send_len, recv, recv_len);
 }
 
-void drv_spi_start(void *p, uint32_t freq)
+void drv_spi_start(void *p, uint32_t freq, uint32_t cs_io, uint32_t mode)
 {
     drv_spi_vmt *spip = p;
     uint32_t freq_flag;
+    uint32_t spimode;
 
     if (spip->started) {
         return;
@@ -251,19 +257,39 @@ void drv_spi_start(void *p, uint32_t freq)
 
     SPIDriver *drv = drv_bus_table[spip->busid];
     
-    memset(&g_config, 0, sizeof(SPIConfig));
-    g_config.data_cb = NULL;
-    g_config.ssport = PAL_PORT(LINE_MPU6000_CS);
-    g_config.sspad = PAL_PAD(LINE_MPU6000_CS);
+    memset(&spip->config, 0, sizeof(SPIConfig));
+    spip->config.data_cb = NULL;
+    spip->config.ssport = PAL_PORT(cs_io);
+    spip->config.sspad = PAL_PAD(cs_io);
 
     freq_flag = derive_freq_flag_bus(spip->busid, freq);
-    g_config.cr1 = (uint16_t)(freq_flag | SPIDEV_MODE3);
+    switch (mode) {
+        case DRV_SPI_MODE0:
+            spimode = SPIDEV_MODE0;
+            break;
+        case DRV_SPI_MODE1:
+            spimode = SPIDEV_MODE1;
+            break;
+        case DRV_SPI_MODE2:
+            spimode = SPIDEV_MODE2;
+            break;
+        case DRV_SPI_MODE3:
+            spimode = SPIDEV_MODE3;
+            break;           
+        default:
+            spimode = SPIDEV_MODE3;
+            break;
+    }
+    
+    spip->config.cr1 = (uint16_t)(freq_flag | spimode);
     //printk("cr1:0x%x.\r\n", g_config.cr1);
-    g_config.cr2 = 0;
+    spip->config.cr2 = 0;
 
     spiAcquireBus(drv);              /* Acquire ownership of the bus.    */
-    spiStart(drv, &g_config);
+    spiStart(drv, &spip->config);
     spiReleaseBus(drv);
+    spip->cs = cs_io;
+    spip->spimode = mode;
     spip->started = true;
 
     return;
@@ -312,14 +338,6 @@ static uint32_t derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
     return i * SPI_CR1_BR_0;
 }
 
-void drv_spi_freq_set(void *p, uint32_t freq)
-{
-    drv_spi_stop(p);
-    drv_spi_start(p, freq);
-    return;
-}
-
-
 /**
  * Wrapper function over #transfer() to read recv_len registers, starting
  * by first_reg, into the array pointed by recv. The read flag passed to
@@ -356,7 +374,8 @@ uint8_t drv_spi_register_read(void *p, uint8_t reg)
 
 void drv_spi_set_speed(void *p, uint32_t freq)
 {
+    drv_spi_vmt *spip = p;
     drv_spi_stop(p);
-    drv_spi_start(p, freq);
+    drv_spi_start(p, freq, spip->cs, spip->spimode);
 }
 

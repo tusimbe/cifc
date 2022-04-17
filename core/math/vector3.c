@@ -28,6 +28,14 @@
 #include <float.h>
 #include <math.h>
 
+VECTOR3 vector3_new(float x, float y, float z)
+{
+    VECTOR3 v3;
+
+    v3.v[0] = x; v3.v[1] = y; v3.v[2] = z;
+    return v3;
+}
+
 VECTOR3 vector3_cross(VECTOR3 *v1, VECTOR3 *v2)
 {
     VECTOR3 ret;
@@ -63,6 +71,18 @@ VECTOR3 vector3_add(VECTOR3 *v1, VECTOR3 *v2)
     return r;
 }
 
+VECTOR3 vector3_sub(VECTOR3 *v1, VECTOR3 *v2)
+{
+    uint8_t i;
+    VECTOR3 r;
+
+    for (i = 0; i < 3; i++) {
+        r.v[i] = v1->v[i] - v2->v[i];
+    }
+
+    return r;
+}
+
 VECTOR3 vector3_div(VECTOR3 *v1, float d)
 {
     uint8_t i;
@@ -73,6 +93,24 @@ VECTOR3 vector3_div(VECTOR3 *v1, float d)
     }
 
     return r;
+}
+
+void vector3_set(VECTOR3 *v, float v0, float v1, float v2)
+{
+    v->v[0] = v0;
+    v->v[1] = v1;
+    v->v[2] = v2;
+}
+
+VECTOR3 vector3_neg(VECTOR3 *v)
+{
+    uint8_t i;
+    VECTOR3 tmp;
+
+    for (i = 0; i < 3; i++) {
+        tmp.v[i] = -v->v[i];
+    }
+    return tmp;
 }
 
 void vector3_zero(VECTOR3 *v)

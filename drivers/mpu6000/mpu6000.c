@@ -99,7 +99,7 @@ int32_t mpu6k_init(uint32_t spi_id)
         return -1;
     }
 
-    drv_spi_start(g_drvp, MPU6000_LOW_FREQ);
+    drv_spi_start(g_drvp, MPU6000_LOW_FREQ, LINE_MPU6000_CS, DRV_SPI_MODE3);
 
     chip_id = drv_spi_register_read(g_drvp, MPUREG_WHOAMI);
     if (MPU_WHOAMI_6000 != chip_id) {
@@ -331,7 +331,7 @@ void _read_fifo(void)
     }
 
     if (need_reset) {
-        printk("fifo reset n_samples %u.\r\n", bytes_read/MPU_SAMPLE_SIZE);
+        //printk("fifo reset n_samples %u.\r\n", bytes_read/MPU_SAMPLE_SIZE);
         _fifo_reset();
     }
     

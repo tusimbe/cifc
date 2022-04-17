@@ -37,3 +37,14 @@ VECTOR3 matrix3_mul_vectro3(MATRIX3 *m3, VECTOR3 *v)
     return v3r; 
 }
 
+MATRIX3 matrix3_new(float a0, float a1, float a2, float b0, float b1, float b2, float c0, float c1, float c2)
+{
+    MATRIX3 mtrx3;
+
+    mtrx3.m[0][0] = a0; mtrx3.m[0][1] = a1; mtrx3.m[0][2] = a2;
+    mtrx3.m[1][0] = b0; mtrx3.m[1][1] = b1; mtrx3.m[1][2] = b2;
+    mtrx3.m[2][0] = c0; mtrx3.m[2][1] = c1; mtrx3.m[2][2] = c2;
+
+    return mtrx3;
+}
+

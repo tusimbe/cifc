@@ -33,6 +33,7 @@
 #include "usbcfg.h"
 #endif
 #include "task.h"
+#include "compass_calibrator.h"
 
 #define TASK_NAME_INITIALIZER(_name) .name = #_name
 
@@ -124,7 +125,7 @@ TASK_STRU_T tasks[] = {
     TASK_ENTRY(test_func1,         50,    200),
     TASK_ENTRY(test_func2,          5,     50),
     TASK_ENTRY(test_func3,          1,     50),
-
+    TASK_ENTRY(cmps_clbrt_update, 100,    100),
 };
 
 uint32_t _tasksize = sizeof(tasks) / sizeof(tasks[0]);

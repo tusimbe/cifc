@@ -16,46 +16,17 @@
 
 #include "ch.h"
 #include "hal.h"
+#include "cmsis_os.h"
 #include "chprintf.h"
 #include "shell.h"
 #include "usbcfg.h"
 #include "scheduler.h"
 #include "mpu6000.h"
 #include "qmc5883l.h"
-
-/*
- * Red LED blinker thread, times are in milliseconds.
- */
-#if 0
-static THD_WORKING_AREA(waThread1, 128);
-static THD_FUNCTION(Thread1, arg) {
-
-  (void)arg;
-  chRegSetThreadName("blinker1");
-  while (true) {
-    palClearPad(GPIOF, GPIOF_LED_GREEN);
-    chThdSleepMilliseconds(500);
-    palSetPad(GPIOF, GPIOF_LED_GREEN);
-    chThdSleepMilliseconds(500);
-  }
-}
-
-/*
- * Green LED blinker thread, times are in milliseconds.
- */
-static THD_WORKING_AREA(waThread2, 128);
-static THD_FUNCTION(Thread2, arg) {
-
-  (void)arg;
-  chRegSetThreadName("blinker2");
-  while (true) {
-    palClearPad(GPIOG, GPIOG_LED_BLUE);
-    chThdSleepMilliseconds(250);
-    palSetPad(GPIOG, GPIOG_LED_BLUE);
-    chThdSleepMilliseconds(250);
-  }
-}
-#endif
+#include "compass.h"
+#include "fram.h"
+#include "lfs.h"
+#include "params.h"
 /*===========================================================================*/
 /* Command line related.                                                     */
 /*===========================================================================*/
@@ -69,7 +40,7 @@ static void _init(void)
 	 *	 RTOS is active.
 	 */
 	halInit();
-	chSysInit();
+	osKernelInitialize();
 	
 	/*
 	 * Shell manager initialization.
@@ -94,17 +65,13 @@ static void _init(void)
 
     scheduler_init();
     mpu6k_init(0);
-    //qmc5883l_init(0);
-	
-	/*
-	 * Creating the blinker threads.
-	 */
-#if 0
-	chThdCreateStatic(waThread1, sizeof(waThread1),
-				      NORMALPRIO + 10, Thread1, NULL);
-	chThdCreateStatic(waThread2, sizeof(waThread2),
-					  NORMALPRIO + 10, Thread2, NULL);
-#endif
+    qmc5883l_init(0);
+    compass_init();
+    fram_init(1);
+
+    params_init();
+    
+	osKernelStart();
 }
 
 /*===========================================================================*/

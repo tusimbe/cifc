@@ -26,10 +26,16 @@
 #ifndef _DRV_SPI_H_
 #define _DRV_SPI_H_
 
+#define DRV_SPI_MODE0   0
+#define DRV_SPI_MODE1   1
+#define DRV_SPI_MODE2   2
+#define DRV_SPI_MODE3   3
+
+
 bool drv_spi_transfer(void *p, const uint8_t *send, 
                 uint32_t send_len, uint8_t *recv, uint32_t recv_len);
 void* drv_spi_create(uint32_t busid);
-void drv_spi_start(void *p, uint32_t freq);
+void drv_spi_start(void *p, uint32_t freq, uint32_t cs_io, uint32_t mode);
 bool drv_spi_read_registers(void *p, uint8_t first_reg, uint8_t *recv, uint32_t recv_len);
 bool drv_spi_write_register(void *p, uint8_t reg, uint8_t val);
 void drv_spi_freq_set(void *p, uint32_t freq);

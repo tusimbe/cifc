@@ -31,5 +31,6 @@ typedef struct stru_matrix3 {
 } MATRIX3;
 
 VECTOR3 matrix3_mul_vectro3(MATRIX3 *m3, VECTOR3 *v);
+MATRIX3 matrix3_new(float a0, float a1, float a2, float b0, float b1, float b2, float c0, float c1, float c2);
 
 #endif

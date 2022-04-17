@@ -25,6 +25,7 @@
 *****************************************************************************/
 #ifndef _COMPASS_H_
 #define _COMPASS_H_
+#include "vector3.h"
 
 int32_t compass_init(void);
 void compass_notify_new_data(VECTOR3 *magData);

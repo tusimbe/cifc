@@ -35,11 +35,17 @@
 #endif
 #include "imu.h"
 #include "task.h"
+#include "vector3.h"
+#include "compass_calibrator.h"
 #ifndef UNIT_TEST
 #include "mpu6000.h"
 #include "qmc5883l.h"
+#include "fram.h"
 #endif
 #include "ahrs.h"
+#include "lfs.h"
+#include "lfs_port.h"
+#include "params.h"
 #include <math.h>
 #include <float.h>
 #include <stdlib.h>
@@ -56,13 +62,19 @@
 
 void sche_cmd(BaseSequentialStream *chp, int argc, char *argv[]);
 
+extern void lfs_cmd(BaseSequentialStream *chp, int argc, char *argv[]);
+
 #ifndef UNIT_TEST
 static const ShellCommand commands[] = {
 	{"scher", sche_cmd},
 	{"perf", perf_cmd},
     {"mpu6k", mpu6k_cmd},
-    {"qmc5883l", qmc5883l_cmd},
-    {"imu", imu_cmd},   
+    {"qmc", qmc5883l_cmd},
+    {"imu", imu_cmd},
+    {"cpcl", compass_calibrator_cmd},
+    {"fram", fram_cmd},
+    {"lfs", lfs_cmd},
+    {"param", param_cmd},   
 	{NULL, NULL}
 };
 

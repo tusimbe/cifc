@@ -35,6 +35,7 @@
 #include "qmc5883l.h"
 #include "compass.h"
 #include <string.h>
+#include <stdlib.h>
 
 #define QMC5883L_I2C_ADDR 0x0D
 
@@ -67,6 +68,7 @@
 #define QMC5883L_REG_ID 0x0D
 #define QMC5883_ID_VAL 0xFF
 
+static int qmc_debug;
 
 static void *g_drvp_i2c;
 
@@ -123,23 +125,41 @@ static bool _check_whoami(void)
 
 void qmc5883l_cmd(BaseSequentialStream *chp, int argc, char *argv[])
 {
+    int v;
 	int32_t cmd_type;
 	uint8_t chip_id;
 
-	if (argc != 1) {
-		shellUsage(chp, "qmc5883l [id | init | write]");
-		return;
-	} else {
+    if (argc > 2) {
+        shellUsage(chp, "qmc [debug | id | init] [level]");
+        return;
+    } else {
+        
+    }
+
+    if (argc == 1) {
 		if (strcmp(argv[0], "id") == 0) {
 			cmd_type = 1;
 		} else if (strcmp(argv[0], "init") == 0){
 			cmd_type = 2;
+		} else if (strcmp(argv[0], "fifo") == 0){
+			cmd_type = 3;
 		} else {
 			cmd_type = -1;
-			shellUsage(chp, "qmc5883l [id | init | write]");
+			shellUsage(chp, "qmc [id | init | fifo]");
 			return;
 		}
-	}
+    } else if (argc == 2){
+    	if (strcmp(argv[0], "debug") == 0)
+    	{
+    		v = atoi(argv[1]);
+    		qmc_debug = v;
+    	} else {
+            printk("unknown cmd.\r\n");
+        }
+
+        return;
+    }
+    
 
     if (cmd_type == 1) {
         chip_id = drv_i2c_read_register(g_drvp_i2c, QMC5883L_REG_ID);
@@ -155,7 +175,7 @@ void qmc5883l_cmd(BaseSequentialStream *chp, int argc, char *argv[])
 void hal_compass_timer(void)
 {
     uint8_t buf[6];
-    uint16_t magData[3];
+    int16_t magData[3];
 
     const float range_scale = 1000.0f / 3000.0f;
 
@@ -173,22 +193,24 @@ void hal_compass_timer(void)
         return;
     }
 
-    magData[0] = (int16_t)(buf[1] << 8 | buf[0]);
+    magData[0] = -((int16_t)(buf[1] << 8 | buf[0]));
     magData[1] = (int16_t)(buf[3] << 8 | buf[2]);
-    magData[2] = (int16_t)(buf[5] << 8 | buf[4]);
+    magData[2] = -((int16_t)(buf[5] << 8 | buf[4]));
 
 
-#if 0
-    printk("mag.x:%d\t", magData[0]);
-    printk("mag.y:%d\t", magData[1]);
-    printk("mag.z:%d\r\n", magData[2]);
-#endif
+    if (qmc_debug == 1) {
+        printk("mag(%05d %05d %05d)\r", magData[0], magData[1], magData[2]);
+    }
 
     VECTOR3 field;
     field.v[0] = magData[0] * range_scale;
     field.v[1] = magData[1] * range_scale;
     field.v[2] = magData[2] * range_scale;
     
+    if (qmc_debug == 2) {
+        float radius = vector3_length(&field);
+        printk("mag(%04.4f %04.4f %04.4f) r:%04.04f\r", field.v[0], field.v[1], field.v[2], radius);
+    }    
     compass_notify_new_data(&field);
 }
 

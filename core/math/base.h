@@ -65,5 +65,25 @@ static inline float constrain_float(const float amt, const float low, const floa
     return amt;
 }
 
+static inline bool is_equal(const float fVal1, float fVal2) {
+    return (fabsf(fVal1 - fVal2) < FLT_EPSILON);
+}
+
+/*
+  simple 16 bit random number generator
+ */
+static inline uint16_t get_random16(void)
+{
+    static uint32_t m_z = 1234;
+    static uint32_t m_w = 76542;
+    m_z = 36969 * (m_z & 0xFFFFu) + (m_z >> 16);
+    m_w = 18000 * (m_w & 0xFFFFu) + (m_w >> 16);
+    return ((m_z << 16) + m_w) & 0xFFFF;
+}
+
+static inline float sq(const float v)
+{
+    return v*v;
+}
 #endif
 

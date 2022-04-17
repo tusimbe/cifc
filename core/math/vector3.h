@@ -30,10 +30,14 @@ typedef struct stru_vector3 {
     float v[3];
 } VECTOR3;
 
+VECTOR3 vector3_new(float x, float y, float z);
 VECTOR3 vector3_cross(VECTOR3 *v1, VECTOR3 *v2);
 VECTOR3 vector3_product(VECTOR3 *v1, float v2);
 VECTOR3 vector3_add(VECTOR3 *v1, VECTOR3 *v2);
+VECTOR3 vector3_sub(VECTOR3 *v1, VECTOR3 *v2);
 VECTOR3 vector3_div(VECTOR3 *v1, float d);
+VECTOR3 vector3_neg(VECTOR3 *v);
+void vector3_set(VECTOR3 *v, float v0, float v1, float v2);
 void vector3_zero(VECTOR3 *v);
 void vector3_copy(VECTOR3 *dst, VECTOR3 *src);
 bool vector3_is_nan(VECTOR3 *v);

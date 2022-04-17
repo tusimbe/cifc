@@ -35,6 +35,7 @@
 #include "base.h"
 #include "vector3.h"
 #include "compass.h"
+#include "compass_calibrator.h"
 #include "matrix3.h"
 #include <string.h>
 #include <math.h>
@@ -79,7 +80,7 @@ uint8_t param_compass_range = 0;
 
 static bool compass_sample_thread_start(void);
 static bool have_scale_factor(void);
-void publish_raw_field(const VECTOR3 *mag);
+void publish_raw_field(VECTOR3 *mag);
 void correct_field(VECTOR3 *mag);
 bool field_ok(VECTOR3 *field);
 
@@ -144,20 +145,13 @@ void compass_notify_new_data(VECTOR3 *magData)
 }
 
 
-void publish_raw_field(const VECTOR3 *mag)
+void publish_raw_field(VECTOR3 *mag)
 {
-    (void)mag;
-#if 0
-    Compass::mag_state &state = _compass._state[instance];
-
     // note that we do not set last_update_usec here as otherwise the
     // EKF and DCM would end up consuming compass data at the full
     // sensor rate. We want them to consume only the filtered fields
-    state.last_update_ms = millis();
-#endif
-#ifdef COMPASS_CAL_ENABLED
-    _compass._calibrator[instance].new_sample(mag);
-#endif
+    compass.last_update_ms = millis();
+    cmps_clbrt_new_sample(mag);
 }
 
 void correct_field(VECTOR3 *mag)
