@@ -580,11 +580,11 @@
                            PIN_MODE_INPUT(5U) | \
                            PIN_MODE_INPUT(6U) | \
                            PIN_MODE_INPUT(7U) | \
-                           PIN_MODE_INPUT(8U) | \
+                           PIN_MODE_ALTERNATE(8U) | \
                            PIN_MODE_ALTERNATE(9U) | \
-                           PIN_MODE_INPUT(10U) | \
-                           PIN_MODE_INPUT(11U) | \
-                           PIN_MODE_INPUT(12U) | \
+                           PIN_MODE_ALTERNATE(10U) | \
+                           PIN_MODE_ALTERNATE(11U) | \
+                           PIN_MODE_ALTERNATE(12U) | \
                            PIN_MODE_INPUT(13U) | \
                            PIN_MODE_INPUT(14U) | \
                            PIN_MODE_INPUT(15U))
@@ -598,7 +598,7 @@
                            PIN_OTYPE_PUSHPULL(6U) | \
                            PIN_OTYPE_PUSHPULL(7U) | \
                            PIN_OTYPE_PUSHPULL(8U) | \
-                           PIN_OTYPE_OPENDRAIN(9U) | \
+                           PIN_OTYPE_PUSHPULL(9U) | \
                            PIN_OTYPE_PUSHPULL(10U) | \
                            PIN_OTYPE_PUSHPULL(11U) | \
                            PIN_OTYPE_PUSHPULL(12U) | \

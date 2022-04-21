@@ -100,17 +100,17 @@ static uint32_t derive_freq_flag_bus(uint8_t busid, uint32_t _frequency);
 static bool do_transfer(uint32_t busid, const uint8_t *send, uint8_t *recv, uint32_t len)
 {
     bool ret = true;
-
+    uint32_t flag;
     if (busid >= drv_bus_size) {
         printk("[%s, %d] busid %d is bigger than bus table size %d.\r\n", 
-                                    __func__, __LINE__, busid, drv_bus_size);
+                                    __func__, __LINE__, (int)busid, (int)drv_bus_size);
         return false;
     }
 
     SPIDriver *drv = drv_bus_table[busid];
 
-    osalSysLock();
-
+    flag = irqsave();
+    //printk("1.\r\n");
     if (send == NULL) {
         spiStartReceiveI(drv, len, recv);
     } else if (recv == NULL) {
@@ -118,13 +118,15 @@ static bool do_transfer(uint32_t busid, const uint8_t *send, uint8_t *recv, uint
     } else {
         spiStartExchangeI(drv, len, send, recv);
     }
+    
     // we allow SPI transfers to take a maximum of 20ms plus 32us per
     // byte. This covers all use cases in ArduPilot. We don't ever
     // expect this timeout to trigger unless there is a severe MCU
     // error
     const uint32_t timeout_us = 20000U + len * 32U;
     msg_t msg = osalThreadSuspendTimeoutS(&drv->sync_transfer, TIME_US2I(timeout_us));
-    osalSysUnlock();
+    //printk("2.\r\n");
+    irqrestore(flag);
     if (msg == MSG_TIMEOUT) {
         printk("[%s, %d] spi transfer time out.\r\n", __func__, __LINE__);
         ret = false;
@@ -150,7 +152,7 @@ static bool transfer(void *p, const uint8_t *send, uint32_t send_len,
 
     if (spip->busid >= drv_bus_size) {
         printk("[%s, %d] busid %d is bigger than bus table size %d.\r\n", 
-                                    __func__, __LINE__, spip->busid, drv_bus_size);
+                                    __func__, __LINE__, (int)spip->busid, (int)drv_bus_size);
         return false;
     }
 
@@ -161,7 +163,7 @@ static bool transfer(void *p, const uint8_t *send, uint32_t send_len,
 
     uint8_t *buf = malloc(send_len+recv_len);
     if (!buf) {
-        printk("[%s:L%d malloc %d failed.\r\n]", __func__, __LINE__, send_len+recv_len);
+        printk("[%s:L%d malloc %d failed.\r\n]", __func__, __LINE__, (int)(send_len+recv_len));
         return false;
     }
 
@@ -179,6 +181,7 @@ static bool transfer(void *p, const uint8_t *send, uint32_t send_len,
     }
 
     free(buf);
+
     return ret;
 }
 
@@ -187,7 +190,7 @@ void* drv_spi_create(uint32_t busid)
 {
     if (busid >= drv_bus_size) {
         printk("[%s, %d] busid %d is bigger than bus table size %d.\r\n", 
-                                    __func__, __LINE__, busid, drv_bus_size);
+                                    __func__, __LINE__, (int)busid, (int)drv_bus_size);
         return NULL;
     }
 
@@ -220,7 +223,7 @@ static bool _transfer(void *p, const uint8_t *send,
 
     if (spip->busid >= drv_bus_size) {
         printk("[%s, %d] busid %d is bigger than bus table size %d.\r\n", 
-                                    __func__, __LINE__, spip->busid, drv_bus_size);
+                                    __func__, __LINE__, (int)spip->busid, (int)drv_bus_size);
         return false;
     }
 
@@ -236,6 +239,11 @@ static bool _transfer(void *p, const uint8_t *send,
 bool drv_spi_transfer(void *p, const uint8_t *send, 
                 uint32_t send_len, uint8_t *recv, uint32_t recv_len)
 {
+#ifdef _DEBUG_
+    drv_spi_vmt *spip = p;
+    printk("[%s, L%d] bus %d send@%p sl:%d, recv@%p, rl:%d.\r\n", 
+        __func__, __LINE__, spip->busid, send, (int)send_len, recv, (int)recv_len);
+#endif
     return _transfer(p, send, send_len, recv, recv_len);
 }
 
@@ -245,13 +253,11 @@ void drv_spi_start(void *p, uint32_t freq, uint32_t cs_io, uint32_t mode)
     uint32_t freq_flag;
     uint32_t spimode;
 
-    if (spip->started) {
-        return;
-    }
+    spip->started = false;
 
     if (spip->busid >= drv_bus_size) {
         printk("[%s, %d] busid %d is bigger than bus table size %d.\r\n", 
-                                    __func__, __LINE__, spip->busid, drv_bus_size);
+                                    __func__, __LINE__, (int)spip->busid, (int)drv_bus_size);
         return;
     }
 
@@ -305,7 +311,7 @@ void drv_spi_stop(void *p)
 
     if (spip->busid >= drv_bus_size) {
         printk("[%s, %d] busid %d is bigger than bus table size %d.\r\n", 
-                                    __func__, __LINE__, spip->busid, drv_bus_size);
+                                    __func__, __LINE__, (int)spip->busid, (int)drv_bus_size);
         return;
     }
 

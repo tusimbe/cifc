@@ -644,11 +644,11 @@
                                      PIN_OSPEED_MEDIUM(5U) |     \
                                      PIN_OSPEED_MEDIUM(6U) |     \
                                      PIN_OSPEED_MEDIUM(7U) |        \
-                                     PIN_OSPEED_MEDIUM(8U) |       \
-                                     PIN_OSPEED_MEDIUM(9U) |      \
-                                     PIN_OSPEED_MEDIUM(10U) |        \
-                                     PIN_OSPEED_MEDIUM(11U) |      \
-                                     PIN_OSPEED_MEDIUM(12U) |      \
+                                     PIN_OSPEED_MEDIUM(GPIOC_SDIO_D0) |       \
+                                     PIN_OSPEED_MEDIUM(GPIOC_SDIO_D1) |      \
+                                     PIN_OSPEED_MEDIUM(GPIOC_SDIO_D2) |        \
+                                     PIN_OSPEED_MEDIUM(GPIOC_SDIO_D3) |      \
+                                     PIN_OSPEED_MEDIUM(GPIOC_SDIO_CK) |      \
                                      PIN_OSPEED_MEDIUM(13U) |      \
                                      PIN_OSPEED_MEDIUM(GPIOC_OSC32_IN) |      \
                                      PIN_OSPEED_MEDIUM(GPIOC_OSC32_OUT))
@@ -660,11 +660,11 @@
                                      PIN_PUPDR_FLOATING(5U) |  \
                                      PIN_PUPDR_FLOATING(6U) |  \
                                      PIN_PUPDR_FLOATING(7U) |     \
-                                     PIN_PUPDR_FLOATING(8U) |         \
-                                     PIN_PUPDR_FLOATING(9U) |   \
-                                     PIN_PUPDR_FLOATING(10U) |     \
-                                     PIN_PUPDR_FLOATING(11U) |        \
-                                     PIN_PUPDR_FLOATING(12U) |        \
+                                     PIN_PUPDR_PULLUP(GPIOC_SDIO_D0) |         \
+                                     PIN_PUPDR_PULLUP(GPIOC_SDIO_D1) |   \
+                                     PIN_PUPDR_PULLUP(GPIOC_SDIO_D2) |     \
+                                     PIN_PUPDR_PULLUP(GPIOC_SDIO_D3) |        \
+                                     PIN_PUPDR_FLOATING(GPIOC_SDIO_CK) |        \
                                      PIN_PUPDR_FLOATING(13U) |        \
                                      PIN_PUPDR_FLOATING(GPIOC_OSC32_IN) |   \
                                      PIN_PUPDR_FLOATING(GPIOC_OSC32_OUT))
@@ -676,11 +676,11 @@
                                      PIN_ODR_HIGH(5U) |        \
                                      PIN_ODR_HIGH(6U) |        \
                                      PIN_ODR_HIGH(7U) |           \
-                                     PIN_ODR_HIGH(8U) |             \
-                                     PIN_ODR_HIGH(9U) |         \
-                                     PIN_ODR_HIGH(10U) |           \
-                                     PIN_ODR_HIGH(11U) |            \
-                                     PIN_ODR_HIGH(12U) |            \
+                                     PIN_ODR_HIGH(GPIOC_SDIO_D0) |             \
+                                     PIN_ODR_HIGH(GPIOC_SDIO_D1) |         \
+                                     PIN_ODR_HIGH(GPIOC_SDIO_D2) |           \
+                                     PIN_ODR_HIGH(GPIOC_SDIO_D3) |            \
+                                     PIN_ODR_HIGH(GPIOC_SDIO_CK) |            \
                                      PIN_ODR_HIGH(13U) |            \
                                      PIN_ODR_HIGH(GPIOC_OSC32_IN) |         \
                                      PIN_ODR_HIGH(GPIOC_OSC32_OUT))
@@ -692,11 +692,11 @@
                                      PIN_AFIO_AF(5U, 0U) |     \
                                      PIN_AFIO_AF(6U, 0U) |    \
                                      PIN_AFIO_AF(7U, 0U))
-#define VAL_GPIOC_AFRH              (PIN_AFIO_AF(8U, 0U) |          \
-                                     PIN_AFIO_AF(9U, 4U) |      \
-                                     PIN_AFIO_AF(10U, 0U) |       \
-                                     PIN_AFIO_AF(11U, 0U) |         \
-                                     PIN_AFIO_AF(12U, 0U) |         \
+#define VAL_GPIOC_AFRH              (PIN_AFIO_AF(GPIOC_SDIO_D0, 12U) |          \
+                                     PIN_AFIO_AF(GPIOC_SDIO_D1, 12U) |      \
+                                     PIN_AFIO_AF(GPIOC_SDIO_D2, 12U) |       \
+                                     PIN_AFIO_AF(GPIOC_SDIO_D3, 12U) |         \
+                                     PIN_AFIO_AF(GPIOC_SDIO_CK, 12U) |         \
                                      PIN_AFIO_AF(13U, 0U) |         \
                                      PIN_AFIO_AF(GPIOC_OSC32_IN, 0U) |      \
                                      PIN_AFIO_AF(GPIOC_OSC32_OUT, 0U))
@@ -723,7 +723,7 @@
  */
 #define VAL_GPIOD_MODER             (PIN_MODE_ALTERNATE(0U) |     \
                                      PIN_MODE_ALTERNATE(1U) |     \
-                                     PIN_MODE_INPUT(2U) |           \
+                                     PIN_MODE_ALTERNATE(GPIOD_SDIO_CMD) |           \
                                      PIN_MODE_INPUT(3U) |     \
                                      PIN_MODE_INPUT(GPIOD_PIN4) |           \
                                      PIN_MODE_ALTERNATE(5U) |           \
@@ -739,7 +739,7 @@
                                      PIN_MODE_ALTERNATE(15U))
 #define VAL_GPIOD_OTYPER            (PIN_OTYPE_PUSHPULL(0U) |     \
                                      PIN_OTYPE_PUSHPULL(1U) |     \
-                                     PIN_OTYPE_PUSHPULL(2U) |       \
+                                     PIN_OTYPE_PUSHPULL(GPIOD_SDIO_CMD) |       \
                                      PIN_OTYPE_PUSHPULL(3U) |     \
                                      PIN_OTYPE_PUSHPULL(GPIOD_PIN4) |       \
                                      PIN_OTYPE_PUSHPULL(5U) |       \
@@ -771,7 +771,7 @@
                                      PIN_OSPEED_MEDIUM(GPIOD_PWM_CH8))
 #define VAL_GPIOD_PUPDR             (PIN_PUPDR_FLOATING(0U) |     \
                                      PIN_PUPDR_FLOATING(1U) |     \
-                                     PIN_PUPDR_FLOATING(GPIOD_SDIO_CMD) |         \
+                                     PIN_PUPDR_PULLUP(GPIOD_SDIO_CMD) |         \
                                      PIN_PUPDR_FLOATING(GPIOD_PIN3) |     \
                                      PIN_PUPDR_FLOATING(GPIOD_PIN4) |         \
                                      PIN_PUPDR_PULLUP(GPIOD_UART2_TX) |         \
@@ -803,7 +803,7 @@
                                      PIN_ODR_HIGH(GPIOD_PWM_CH8))
 #define VAL_GPIOD_AFRL              (PIN_AFIO_AF(0U, 9U) |       \
                                      PIN_AFIO_AF(1U, 9U) |       \
-                                     PIN_AFIO_AF(GPIOD_SDIO_CMD, 0U) |          \
+                                     PIN_AFIO_AF(GPIOD_SDIO_CMD, 12U) |          \
                                      PIN_AFIO_AF(GPIOD_PIN3, 0U) |       \
                                      PIN_AFIO_AF(GPIOD_PIN4, 0U) |          \
                                      PIN_AFIO_AF(GPIOD_UART2_TX, 7U) |          \

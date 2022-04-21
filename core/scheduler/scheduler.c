@@ -41,10 +41,11 @@
 #include "mpu6000.h"
 #include "qmc5883l.h"
 #include "fram.h"
-#endif
-#include "ahrs.h"
 #include "lfs.h"
 #include "lfs_port.h"
+#endif
+#include "ahrs.h"
+
 #include "params.h"
 #include <math.h>
 #include <float.h>
@@ -58,32 +59,7 @@
 
 #define SCHE_DEFAULT_LOOP_RATE     400
 
-#define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
-
 void sche_cmd(BaseSequentialStream *chp, int argc, char *argv[]);
-
-extern void lfs_cmd(BaseSequentialStream *chp, int argc, char *argv[]);
-
-#ifndef UNIT_TEST
-static const ShellCommand commands[] = {
-	{"scher", sche_cmd},
-	{"perf", perf_cmd},
-    {"mpu6k", mpu6k_cmd},
-    {"qmc", qmc5883l_cmd},
-    {"imu", imu_cmd},
-    {"cpcl", compass_calibrator_cmd},
-    {"fram", fram_cmd},
-    {"lfs", lfs_cmd},
-    {"param", param_cmd},   
-	{NULL, NULL}
-};
-
-static const ShellConfig shell_cfg1 = {
-  (BaseSequentialStream *)&SDU1,
-  commands
-};
-#endif
-
  
 static thread_t* daemon_task;
 static uint16_t _loop_rate_hz;
@@ -190,7 +166,7 @@ static void run(uint32_t time_available)
 		if (_debug > 1 && task) {
 			if (NULL == task->perf_counter_p) {
 				task->perf_counter_p = perf_counter_create(task->name);
-                debug(2, "task:%s get counter @0x%x.\r\n", task->name, task->perf_counter_p);
+                debug(2, "task:%s get counter @0x%p.\r\n", task->name, task->perf_counter_p);
 			}
 		}
 		
@@ -460,25 +436,6 @@ void scheduler_loop(void)
 		
 	_loop_timer_start_us = sample_time_us;
 
-}
-
-void scheduler_shellThdCreate(void)
-{
-#ifndef UNIT_TEST
-	static bool isCreate = false;
-    if ((!isCreate) && (SDU1.config->usbp->state == USB_ACTIVE)) {
-		thread_t *shelltp = chThdCreateFromHeap(NULL, SHELL_WA_SIZE,
-		                                      "shell", SCHE_SHELL_PRIORITY,
-		                                      shellThread, (void *)&shell_cfg1);
-		if(shelltp != NULL) {
-			isCreate = true;
-		} else {
-			debug(0, "shell thread create failed!\r\n");
-		}
-    }
-
-	return;
-#endif
 }
 
 void scheduler_init(void)

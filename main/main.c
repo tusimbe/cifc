@@ -27,6 +27,9 @@
 #include "fram.h"
 #include "lfs.h"
 #include "params.h"
+#include "compass_calibrator.h"
+#include "cli.h"
+#include <stdio.h>
 /*===========================================================================*/
 /* Command line related.                                                     */
 /*===========================================================================*/
@@ -39,9 +42,8 @@ static void _init(void)
 	 * - Kernel initialization, the main() function becomes a thread and the
 	 *	 RTOS is active.
 	 */
-	halInit();
-	osKernelInitialize();
-	
+
+    sdStart(&SD8, NULL);
 	/*
 	 * Shell manager initialization.
 	 */
@@ -63,15 +65,20 @@ static void _init(void)
 	usbStart(serusbcfg.usbp, &usbcfg);
 	usbConnectBus(serusbcfg.usbp);
 
+    /* pramaters init */
+    cmps_params_register();
+    fram_init(1);
+    params_init();
+
     scheduler_init();
+
+    /* driver init */
     mpu6k_init(0);
     qmc5883l_init(0);
-    compass_init();
-    fram_init(1);
-
-    params_init();
+    sdcard_init();
     
-	osKernelStart();
+    /* core init */
+    compass_init();
 }
 
 /*===========================================================================*/
@@ -91,12 +98,13 @@ int main(void)
 	 *  Normal main() thread activity, spawning shells.
 	 */
   	while (true) {
-		scheduler_shellThdCreate();
+		cli_ThdCreate();
 		scheduler_loop();
 
 		if (!scheduler_check_called_boost()) {
             scheduler_delay_microseconds(50);
         }
+        //scheduler_delay_microseconds(100);
   	}
 
 	return 0;

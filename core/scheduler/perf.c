@@ -29,9 +29,6 @@
 #include "system.h"
 #include "perf.h"
 #include "shell.h"
-#ifndef UNIT_TEST
-#include "usbcfg.h"
-#endif
 #include "task.h"
 #include "scheduler.h"
 #include <math.h>
@@ -266,22 +263,22 @@ void perf_end(void *p)
 	return;
 }
 
-void perf_counter_show(BaseSequentialStream *chp, TASK_STRU_T *task)
+void perf_counter_show(TASK_STRU_T *task)
 {
 	PERF_STRU_COUNT_T *c;
 
 	if (task && task->perf_counter_p) {
 		c = task->perf_counter_p;
 	} else {
-	    chprintf(chp, "(no task or no perf counter)\r\n");
+	    printf("(no task or no perf counter)\r\n");
 		return;
 	}
 
 	if (!c->count) {
-	    chprintf(chp, "%-30s\t"
+	    printf("%-30s\t"
 	            "(no events)\r\n", c->name);
 	} else {
-	    chprintf(chp, "%-30s\t"
+	    printf("%-30s\t"
                 "start: %u\t"
                 "total: %u\t"
 	            "count: %u\t"
@@ -289,45 +286,49 @@ void perf_counter_show(BaseSequentialStream *chp, TASK_STRU_T *task)
 	            "max: %u\t"
 	            "avg: %f\t"
 	            "stddev: %f\r\n",
-	            c->name, c->start, c->total, c->count, c->min, c->max, c->avg, sqrt(c->m2));
+	            c->name, (unsigned int)c->start, (unsigned int)c->total, 
+	            (unsigned int)c->count, (unsigned int)c->min, (unsigned int)c->max, c->avg, sqrt(c->m2));
 	}
 
 	return;
    
 }
 
-void perf_counters_show(BaseSequentialStream *chp)
+void perf_counters_show(void)
 {
 	TASK_STRU_T *task;
 	
 	for(uint8_t i = 0; i < task_get_tasksize(); i++) {
 		task = task_get_tasks(i);
-		perf_counter_show(chp, task);
+		perf_counter_show(task);
 	}
 }
 
 void perf_cmd(BaseSequentialStream *chp, int argc, char *argv[])
 {
+    (void)chp;
 	int32_t cmd_type;
 	
 	if (argc != 1) {
-		shellUsage(chp, "perf [sche | task]");
+		shellUsage(chp, "perf [sche | task | crash]");
 		return;
 	} else {
 		if (strcmp(argv[0], "sche") == 0) {
 			cmd_type = 1;
 		} else if (strcmp(argv[0], "task") == 0){
 			cmd_type = 2;
+		} else if (strcmp(argv[0], "crash") == 0){
+			cmd_type = 3;
 		} else {
 			cmd_type = -1;
-			shellUsage(chp, "perf [sche | task]");
+			shellUsage(chp, "perf [sche | task | crash]");
 			return;
 		}
 	}
 
 	switch (cmd_type) {
 		case 1:
-			chprintf(chp, "PERF: %u/%u [%lu:%lu] F=%uHz sd=%lu Ex=%lu",
+			printf("PERF: %u/%u [%lu:%lu] F=%uHz sd=%lu Ex=%lu",
 						(unsigned)get_num_long_running(),
 						(unsigned)get_num_loops(),
 						(unsigned long)get_max_time(),
@@ -337,8 +338,11 @@ void perf_cmd(BaseSequentialStream *chp, int argc, char *argv[])
 						(unsigned long)scheduler_get_extra_loop_us());
 			break;
 		case 2:
-			perf_counters_show(chp);
+			perf_counters_show();
 			break;
+        case 3:
+            __builtin_trap();
+            break;
 		default:
 			break;
 	}

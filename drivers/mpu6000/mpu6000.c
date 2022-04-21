@@ -294,7 +294,7 @@ void _read_fifo(void)
         printk("read fifo counter failed.\r\n");
         goto check_registers;
     }
-
+#if 1
     bytes_read = uint16_val(rx, 0);
     //printk("read fifo counter %u.\r\n", bytes_read);
     n_samples = bytes_read / MPU_SAMPLE_SIZE;
@@ -334,7 +334,7 @@ void _read_fifo(void)
         //printk("fifo reset n_samples %u.\r\n", bytes_read/MPU_SAMPLE_SIZE);
         _fifo_reset();
     }
-    
+#endif    
 check_registers:
     return;
 }
@@ -343,7 +343,7 @@ static bool _sample_thread_start(void)
 {
     thread_t* thread_ctx;
 
-	thread_ctx = chThdCreateFromHeap(NULL, THD_WORKING_AREA_SIZE(1024), "mpu6k",
+	thread_ctx = chThdCreateFromHeap(NULL, THD_WORKING_AREA_SIZE(2048), "mpu6k",
 				      SCHE_SPI_PRIORITY, mpu6k_sample_thd, NULL);
     if (thread_ctx == NULL) {
         return false;

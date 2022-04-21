@@ -393,7 +393,5 @@ size_t chHeapStatus(memory_heap_t *heapp, size_t *totalp, size_t *largestp) {
 
   return n;
 }
-
 #endif /* CH_CFG_USE_HEAP == TRUE */
-
 /** @} */

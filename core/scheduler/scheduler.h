@@ -42,7 +42,6 @@
 #define SCHE_STARTUP_PRIORITY       10
 #define SCHE_SCRIPTING_PRIORITY    LOWPRIO
 
-
 void scheduler_init(void);
 void scheduler_shellThdCreate(void);
 void scheduler_set_main_thread(thread_t* thd);

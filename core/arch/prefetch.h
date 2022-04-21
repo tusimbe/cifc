@@ -26,6 +26,7 @@
 #ifndef _ARCH_PREFETCH_H_
 #define _ARCH_PREFETCH_H_
 
-static inline void prefetch(const void *x) {;}
+static inline void prefetch(const void *x) {(void)x;}
+#define mb() 
 
 #endif

@@ -3,11 +3,11 @@
  *
  *  Copyright © 2017-2018 CHASING INNOVATION. All Rights Reserved.
  *
- * \file      lfs_port.h
+ * \file      sdcard.h
  * \author    johnson@chasing-innovation.com
  * \version   1.0
- * \date      2022年4月17日星期日
- * \brief     lfs文件系统PORTING
+ * \date      2022年4月21日星期四
+ * \brief     SD卡驱动
  *
  *----------------------------------------------------------------------------
  * \attention
@@ -18,17 +18,14 @@
 
 /*****************************************************************************
  change history: 
-    1.date  : 2022年4月17日星期日
+    1.date  : 2022年4月21日星期四
       author: johnson@chasing-innovation.com
       change: create file
 
 *****************************************************************************/
-#ifndef _LFS_PORT_H_
-#define _LFS_PORT_H_
+#ifndef _DRV_SDCARD_H_
+#define _DRV_SDCARD_H_
 
-int lfs_port_mount(lfs_t *lfs);
-void lfs_port_unmount(lfs_t *lfs);
-void lfs_port_format(lfs_t *lfs);
-
+int sdcard_init(void);
 
 #endif

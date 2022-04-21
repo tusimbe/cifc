@@ -209,21 +209,21 @@ void imu_wait_for_sample(void)
         scheduler_delay_microseconds_boost(wait_usec);
         uint32_t now2 =  micros();
         if ((int32_t)(_next_sample_usec - now2) > 100) {
-            printk("shortsleep %u wait_usec=%u\n", (_next_sample_usec - now2), wait_usec);
+            printk("shortsleep %u wait_usec=%u\n", (unsigned int)(_next_sample_usec - now2), (unsigned int)wait_usec);
         }
         if ((int32_t)(now2 - _next_sample_usec) > 400) {
-            printk("longsleep %u wait_usec=%u\n", (now2 - _next_sample_usec), wait_usec);
+            printk("longsleep %u wait_usec=%u\n", (unsigned int)(now2 - _next_sample_usec), (unsigned int)wait_usec);
         }
         _next_sample_usec += _sample_period_usec;
     } else if ((int32_t)(now - _next_sample_usec) < (int32_t)(_sample_period_usec/8)) {
         // we've overshot, but only by a small amount, keep on
         // schedule with no delay
-        printk("overshoot1 %u\n", (unsigned)(now-_next_sample_usec));
+        //printk("overshoot1 %u\n", (unsigned)(now-_next_sample_usec));
         _next_sample_usec += _sample_period_usec;
     } else {
         // we've overshot by a larger amount, re-zero scheduling with
         // no delay
-        printk("overshoot2 %u\n", (unsigned)(now-_next_sample_usec));
+        //printk("overshoot2 %u\n", (unsigned)(now-_next_sample_usec));
         _next_sample_usec = now + _sample_period_usec;
     }
 

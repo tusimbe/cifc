@@ -27,13 +27,16 @@
 #include "hal.h"
 #include "chprintf.h"
 #include "system.h"
+#ifndef UNIT_TEST
 #include "usbcfg.h"
+#endif
 #include "shell.h"
 #include "base.h"
 #include "vector3.h"
 #include "matrix3.h"
 #include "geodisicGrip.h"
 #include "matrix_alg.h"
+#include "params.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -64,6 +67,13 @@ typedef struct {
     float scale_factor;  // scaling factor to compensate for radius error
 } param_t;
 
+PARAM_LST cmps_params_lst[] = {
+    {"offset_x", param_type_float, .val.f = 1.0},
+    {"offset_y", param_type_float, .val.f = 2.0},
+    {"offset_z", param_type_float, .val.f = 3.0},
+};
+
+
 enum Status _status;                    // current state of calibrator
 
 // behavioral state
@@ -93,6 +103,39 @@ bool accept_sample(VECTOR3 *sample, uint16_t skip_index);
 bool set_status(enum Status status);
 bool calculate_orientation(void);
 bool fit_acceptable(void);
+
+
+/* modules call back interfaces */
+uint32_t cmps_cali_param_numbers_get(uint32_t moduleid)
+{
+    (void)moduleid;
+    
+    return ARRAY_SIZE(cmps_params_lst);
+}
+
+int32_t cmps_cali_param_default_load(uint32_t moduleid, uint32_t paramid, PARAM_ENTRY_T *data)
+{
+    (void)moduleid;
+    
+    PARAM_LST *p;
+    if (paramid >= ARRAY_SIZE(cmps_params_lst)) {
+        return -1;
+    }
+
+    p = &cmps_params_lst[paramid];
+    
+    data->entry_name = p->name;
+    data->type = p->type;
+    memcpy(&data->data, &p->val, sizeof(PARAM_DATA));
+
+    return 0;    
+}
+
+void cmps_params_register(void)
+{
+    (void)param_cb_register(param_module_compass, "compassclb", 
+        cmps_cali_param_numbers_get, cmps_cali_param_default_load);
+}
 
 
 bool running(void)
@@ -768,7 +811,6 @@ void cmps_clbrt_update(void)
     bool failure;
     _cmps_clbrt_update(&failure);
 }
-
 
 void calibrator_show(void)
 {

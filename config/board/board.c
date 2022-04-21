@@ -21,7 +21,7 @@
 
 #include "hal.h"
 #include "stm32_gpio.h"
-
+#include "malloc.h"
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
@@ -211,6 +211,12 @@ void __early_init(void) {
 
   stm32_gpio_init();
   stm32_clock_init();
+}
+
+void __late_init(void) {
+	halInit();
+	chSysInit();
+    malloc_init();
 }
 
 #if HAL_USE_SDC || defined(__DOXYGEN__)

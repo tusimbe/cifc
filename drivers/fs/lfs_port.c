@@ -32,6 +32,7 @@
 #include "lfs.h"
 #include "fram.h"
 #include "lfs_port.h"
+#include <string.h>
 
 // Read a region in a block. Negative error codes are propagated
 // to the user.
@@ -56,8 +57,15 @@ int lfs_port_prog(const struct lfs_config *c, lfs_block_t block,
 // May return LFS_ERR_CORRUPT if the block should be considered bad.
 int lfs_port_erase(const struct lfs_config *c, lfs_block_t block)
 {
-    (void)c;
-    (void)block;
+    uint8_t *buf;
+    buf = malloc(c->block_size);
+    if (!buf) {
+        return LFS_ERR_NOMEM;
+    }
+    
+    memset(buf, 0xff, c->block_size);
+    fram_write(c->block_size * block, buf, c->block_size);
+    free(buf);
     
     return LFS_ERR_OK;
 }
@@ -97,16 +105,32 @@ int lfs_port_mount(lfs_t *lfs)
     // reformat if we can't mount the filesystem
     // this should only happen on the first boot
     if (err) {
-        lfs_format(lfs, &cfg);
-        lfs_mount(lfs, &cfg);
+        printk("lfs_mount fail ret %d formatting....\r\n", err);
+        err = lfs_format(lfs, &cfg);
+        if (err) {
+            printk("lfs_format fail ret %d.\r\n", err);
+            return err;
+        } else {
+            err = lfs_mount(lfs, &cfg);
+            if (err) {
+                printk("lfs_mount failed again ret %d.\r\n", err);
+            }
+        }
     }
 
+    printk("mount the filesystem success.\r\n");
     return 0;
 }
 
 void lfs_port_unmount(lfs_t *lfs)
 {
     lfs_unmount(lfs);
+}
+
+void lfs_port_format(lfs_t *lfs)
+{
+    lfs_format(lfs, &cfg);
+    return;
 }
 
 // entry point

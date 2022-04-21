@@ -638,7 +638,6 @@ bool sdcConnect(SDCDriver *sdcp) {
   osalDbgCheck(sdcp != NULL);
   osalDbgAssert((sdcp->state == BLK_ACTIVE) || (sdcp->state == BLK_READY),
                 "invalid state");
-
   /* Connection procedure in progress.*/
   sdcp->state = BLK_CONNECTING;
 

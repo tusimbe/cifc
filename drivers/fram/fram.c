@@ -30,7 +30,7 @@
 #include "shell.h"
 #include "drv_spi.h"
 #include "system.h"
-#include "cmsis_os.h"
+#include "malloc.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -77,23 +77,20 @@ const RAMTRON_ID ramtron_ids[] = {
 };
 
 static void *g_fram_spi;
-osSemaphoreId fram_sem;
+mutex_t fram_sem;
 uint8_t addrlen;
+uint32_t size_kbyte;
 
 int32_t fram_init(uint32_t spi_id)
 {
     RDID rdid;
     bool isFind = false;
 
-    fram_sem = osSemaphoreCreate(NULL, 1);
-    if (!fram_sem) {
-        printk("[%s, %d] spi %d osSemaphoreCreate failed.\r\n", __func__, __LINE__, spi_id);
-        return -1;
-    }
+    osalMutexObjectInit(&fram_sem);
 
     g_fram_spi = drv_spi_create(spi_id);
     if (!g_fram_spi) {
-        printk("[%s, %d] spi %d driver create failed.\r\n", __func__, __LINE__, spi_id);
+        printk("[%s, %d] spi %d driver create failed.\r\n", __func__, __LINE__, (int)spi_id);
         return -2;
     }
 
@@ -111,6 +108,7 @@ int32_t fram_init(uint32_t spi_id)
         if (ramtron_ids[i].id1 == rdid.id1 &&
             ramtron_ids[i].id2 == rdid.id2) {
             addrlen = ramtron_ids[i].addrlen;
+            size_kbyte = ramtron_ids[i].size_kbyte;
             isFind = true;
             break;
         }
@@ -120,7 +118,7 @@ int32_t fram_init(uint32_t spi_id)
         return -4;
     }
 
-    printk("RAMTRON addr len %d.\r\n", addrlen);
+    printk("RAMTRON addr len %d.\r\n", (int)addrlen);
     return 0;
 
 }
@@ -148,9 +146,9 @@ int32_t fram_read(uint32_t addr, uint8_t *buf, uint32_t size)
     printk("fram_read send %02x %02x %02x sds %d, revsize %d.\r\n", 
         buf_sd[0], buf_sd[1], buf_sd[2], cmd_size, size);
 #endif
-    osSemaphoreWait(fram_sem, osWaitForever);
+    osalMutexLock(&fram_sem);
     drv_spi_transfer(g_fram_spi, buf_sd, cmd_size, buf, size);
-    osSemaphoreRelease(fram_sem);
+    osalMutexUnlock(&fram_sem);
     
     return 0;
 }
@@ -166,7 +164,7 @@ int32_t fram_write(uint32_t addr, uint8_t *buf, uint32_t size)
         return -1;
     }
 
-    osSemaphoreWait(fram_sem, osWaitForever);
+    osalMutexLock(&fram_sem);
     cmd = RAMTRON_WREN;
     drv_spi_transfer(g_fram_spi, &cmd, 1, NULL, 0);
     
@@ -177,10 +175,94 @@ int32_t fram_write(uint32_t addr, uint8_t *buf, uint32_t size)
 #endif
     memcpy(buf_sd + cmd_size, buf, size);
     drv_spi_transfer(g_fram_spi, buf_sd, size + cmd_size, NULL, 0);
-    osSemaphoreRelease(fram_sem);
+    osalMutexUnlock(&fram_sem);
     free(buf_sd);
     
     return 0;
+}
+
+
+void _hexDump(char *desc, void *addr, int len) 
+{
+    int i;
+    unsigned char buff[17];
+    unsigned char *pc = (unsigned char*)addr;
+
+    // Output description if given.
+    if (desc != NULL)
+        printk ("%s:\n", desc);
+
+    // Process every byte in the data.
+    for (i = 0; i < len; i++) {
+        // Multiple of 16 means new line (with line offset).
+
+        if ((i % 16) == 0) {
+            // Just don't print ASCII for the zeroth line.
+            if (i != 0)
+                printk("  %s\n", buff);
+
+            // Output the offset.
+            printk("  %04x ", i);
+        }
+
+        // Now the hex code for the specific character.
+        printk(" %02x", pc[i]);
+
+        // And store a printable ASCII character for later.
+        if ((pc[i] < 0x20) || (pc[i] > 0x7e)) {
+            buff[i % 16] = '.';
+        } else {
+            buff[i % 16] = pc[i];
+        }
+
+        buff[(i % 16) + 1] = '\0';
+    }
+
+    // Pad out last line if not exactly 16 characters.
+    while ((i % 16) != 0) {
+        printk("   ");
+        i++;
+    }
+
+    // And print the final ASCII bit.
+    printk("  %s\n", buff);
+}
+
+#define FRAM_DUMP_SIZE  (1024)
+void _dump(uint32_t start, uint32_t end)
+{
+    uint8_t *buf;
+    uint32_t addr;
+    char desc[24];
+    uint32_t i;
+
+    if (start > size_kbyte || end > size_kbyte) {
+        return;
+    }
+    
+    buf = malloc(FRAM_DUMP_SIZE);
+    if (!buf) {
+        return;
+    }
+
+    for (i = start; i < end; i++) {
+        addr = i * FRAM_DUMP_SIZE;
+        fram_read(addr, buf, FRAM_DUMP_SIZE);
+        sprintf(desc, "block %d.\r\n", (int)i);
+        _hexDump(desc, buf, FRAM_DUMP_SIZE);
+    }
+
+    free(buf);
+}
+
+void _erase(uint8_t val)
+{
+    uint32_t addr;
+    
+    for (addr = 0;addr < size_kbyte * 1024; addr++) {
+        //printf("addr 0x%x val %d.\r\n", (int)addr, val);
+        fram_write(addr, &val, 1);
+    }
 }
 
 void fram_cmd(BaseSequentialStream *chp, int argc, char *argv[])
@@ -189,27 +271,40 @@ void fram_cmd(BaseSequentialStream *chp, int argc, char *argv[])
     RDID rdid;
     uint32_t addr;
     uint32_t test_c = 0xdeadbeef;
+    uint32_t start, end;
+    uint32_t val;
 
 	if (argc > 3) {
-		shellUsage(chp, "fram [id | init | test]");
+		shellUsage(chp, "fram [id | init | test | dump]");
 		return;
-	} else if (argc == 1){
+	} 
+
+    if (argc == 1){
 		if (strcmp(argv[0], "id") == 0) {
 			cmd_type = 1;
 		} else if (strcmp(argv[0], "init") == 0){
 			cmd_type = 2;
 		} else {
 			cmd_type = -1;
-			shellUsage(chp, "fram [id | init | test]");
+			shellUsage(chp, "fram [id | init | test | dump]");
 			return;
 		}
-	} else {
+	} else if (argc == 2) {
+        if (strcmp(argv[0], "erase") == 0){
+            cmd_type = 5;
+            val = atoi(argv[1]);
+        }
+    } else {
         if (strcmp(argv[0], "test") == 0){
             cmd_type = 3;
             addr = atoi(argv[1]);
             if (argc == 3) {
                 test_c = atoi(argv[2]);
             }
+        } else if (strcmp(argv[0], "dump") == 0){
+            start = atoi(argv[1]);
+            end = atoi(argv[2]);
+            cmd_type = 4;
         }
     }
 
@@ -220,7 +315,7 @@ void fram_cmd(BaseSequentialStream *chp, int argc, char *argv[])
             return;
         }
         
-        printk("RAMTRON manufacturer=%02x memory=%02x id1=%02x id2=%02x\n",
+        printk("RAMTRON manufacturer=%02x memory=%02x id1=%02x id2=%02x\r\n",
                             rdid.manufacturer[0], rdid.memory, rdid.id1, rdid.id2);
 
     } else if (cmd_type == 2) {
@@ -230,11 +325,15 @@ void fram_cmd(BaseSequentialStream *chp, int argc, char *argv[])
         
         uint32_t r;
         fram_read(addr, (uint8_t*)&r, 4);
-        printk("read addr %08x : %08x.\r\n", addr, r);
+        printk("read addr %08x : %08x.\r\n", (int)addr, (int)r);
         fram_write(addr, (uint8_t*)&test_c, 4);
-        printk("write addr %08x : %08x.\r\n", addr, test_c);
+        printk("write addr %08x : %08x.\r\n", (int)addr, (int)test_c);
         fram_read(addr, (uint8_t*)&r, 4);
-        printk("read addr %08x : %08x.\r\n", addr, r);
+        printk("read addr %08x : %08x.\r\n", (int)addr, (int)r);
+    } else if (cmd_type == 4) {
+        _dump(start, end);
+    } else if (cmd_type == 5) {
+        _erase((uint8_t)val);
     }
 
     return;

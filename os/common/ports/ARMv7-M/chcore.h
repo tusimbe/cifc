@@ -836,6 +836,64 @@ __STATIC_FORCEINLINE void port_unlock(void) {
 #endif /* CORTEX_SIMPLIFIED_PRIORITY */
 }
 
+
+__STATIC_FORCEINLINE uint32_t irqsave(void) {
+
+#if CORTEX_SIMPLIFIED_PRIORITY == FALSE
+#if defined(__CM7_REV)
+#if __CM7_REV <= 1
+  __disable_irq();
+#endif
+#endif
+    uint32_t base_pri =__get_BASEPRI();
+    __set_BASEPRI(CORTEX_BASEPRI_KERNEL);
+#if defined(__CM7_REV)
+#if __CM7_REV <= 1
+  __enable_irq();
+#endif
+#endif
+  return (base_pri);
+#else /* CORTEX_SIMPLIFIED_PRIORITY */
+  unsigned short primask;
+
+  /* Return the current value of primask register and set
+   * bit 0 of the primask register to disable interrupts
+   */
+
+  __asm__ __volatile__
+    (
+     "\tmrs    %0, primask\n"
+     "\tcpsid  i\n"
+     : "=r" (primask)
+     :
+     : "memory");
+
+  return primask;
+#endif /* CORTEX_SIMPLIFIED_PRIORITY */
+}
+
+__STATIC_FORCEINLINE void irqrestore(uint32_t flags) {
+#if CORTEX_SIMPLIFIED_PRIORITY == FALSE
+  __set_BASEPRI(flags);
+#else /* CORTEX_SIMPLIFIED_PRIORITY */
+  /* If bit 0 of the primask is 0, then we need to restore
+   * interrupts.
+   */
+
+  __asm__ __volatile__
+    (
+      "\ttst    %0, #1\n"
+      "\tbne.n  1f\n"
+      "\tcpsie  i\n"
+      "1:\n"
+      :
+      : "r" (flags)
+      : "memory");
+
+#endif /* CORTEX_SIMPLIFIED_PRIORITY */
+}
+
+
 /**
  * @brief   Kernel-lock action from an interrupt handler.
  * @details In this port this function raises the base priority to kernel

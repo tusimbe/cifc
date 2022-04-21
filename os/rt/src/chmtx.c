@@ -141,6 +141,10 @@ void chMtxLockS(mutex_t *mp) {
 
   chDbgCheckClassS();
   chDbgCheck(mp != NULL);
+  
+  if (mp->queue.next && (uint32_t)mp->queue.next < 0x20000000) {
+      __builtin_trap();
+  }
 
   /* Is the mutex already locked? */
   if (mp->owner != NULL) {
@@ -212,6 +216,11 @@ void chMtxLockS(mutex_t *mp) {
 
       /* Sleep on the mutex.*/
       ch_sch_prio_insert(&mp->queue, &currtp->hdr.queue);
+      #if 1
+        if (mp->queue.next && (uint32_t)mp->queue.next < 0x20000000) {
+            __builtin_trap();
+        }
+      #endif
       currtp->u.wtmtxp = mp;
       chSchGoSleepS(CH_STATE_WTMTX);
 
@@ -234,6 +243,9 @@ void chMtxLockS(mutex_t *mp) {
     mp->owner = currtp;
     mp->next = currtp->mtxlist;
     currtp->mtxlist = mp;
+  if (mp->owner && (uint32_t)mp->owner < 0x20000000) {
+    __builtin_trap();
+  }
   }
 }
 
@@ -338,6 +350,9 @@ void chMtxUnlock(mutex_t *mp) {
 
   if (--mp->cnt == (cnt_t)0) {
 #endif
+    if (mp->queue.next && (uint32_t)mp->queue.next < 0x20000000) {
+        __builtin_trap();
+    }
 
     chDbgAssert(currtp->mtxlist == mp, "not next in list");
 
@@ -374,10 +389,18 @@ void chMtxUnlock(mutex_t *mp) {
 #if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
       mp->cnt = (cnt_t)1;
 #endif
+      if (mp->queue.next && (uint32_t)mp->queue.next < 0x20000000) {
+          __builtin_trap();
+      }
+
       tp = threadref(ch_queue_fifo_remove(&mp->queue));
       mp->owner = tp;
       mp->next = tp->mtxlist;
       tp->mtxlist = mp;
+
+      if (mp->owner && (uint32_t)mp->owner < 0x20000000) {
+        __builtin_trap();
+      }
 
       /* Note, not using chSchWakeupS() because that function expects the
          current thread to have the higher or equal priority than the ones
@@ -389,6 +412,7 @@ void chMtxUnlock(mutex_t *mp) {
     else {
       mp->owner = NULL;
     }
+
 #if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
   }
 #endif

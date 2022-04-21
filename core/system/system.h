@@ -26,7 +26,7 @@
 
 #ifndef _SYSTEM_H_
 #define _SYSTEM_H_
-
+#include <stdio.h>
 #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -35,8 +35,8 @@
 #define MHZ (1000 * 1000)
 
 #ifndef UNIT_TEST
-#define debug(level, fmt, args...)   do {chprintf((BaseSequentialStream *)&SDU1, fmt, ##args);} while(0)
-#define printk(fmt, args...)   do {chprintf((BaseSequentialStream *)&SDU1, fmt, ##args);} while(0)
+#define debug(level, fmt, args...)   do {printf(fmt, ##args);} while(0)
+#define printk(fmt, args...)   do {printf(fmt, ##args);} while(0)
 #else
 #define debug(level, fmt, args...)   
 #define printk(fmt, args...)  

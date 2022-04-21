@@ -79,7 +79,7 @@ void* drv_i2c_create(uint32_t busid, bool smbus, uint8_t devAddr, uint32_t retri
 {
     if (busid >= drv_i2c_size) {
         printk("[%s, %d] busid %d is bigger than bus table size %d.\r\n", 
-                                    __func__, __LINE__, busid, drv_i2c_size);
+                                    __func__, __LINE__, (int)busid, (int)drv_i2c_size);
         return false;
     }
 
@@ -109,7 +109,7 @@ void drv_i2c_start(void *p)
 
     if (i2cp->busid >= drv_i2c_size) {
         printk("[%s, %d] busid %d is bigger than bus table size %d.\r\n", 
-                                    __func__, __LINE__, i2cp->busid, drv_i2c_size);
+                                    __func__, __LINE__, (int)i2cp->busid, (int)drv_i2c_size);
         return;
     }
 

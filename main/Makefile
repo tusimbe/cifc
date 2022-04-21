@@ -5,7 +5,7 @@
 # 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16 --specs=nosys.specs 
+  USE_OPT = -O2 -g -fomit-frame-pointer -falign-functions=16 -DSTDOUT_SD=SD8 -DSTDIN_SD=SD8
 endif
 
 # C specific options here (added to USE_OPT).
@@ -55,7 +55,7 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x400
+  USE_PROCESS_STACKSIZE = 0x800
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
@@ -66,7 +66,7 @@ endif
 
 # Enables the use of FPU (no, softfp, hard).
 ifeq ($(USE_FPU),)
-  USE_FPU = no
+  USE_FPU = hard
 endif
 
 # FPU-related options.
@@ -119,6 +119,9 @@ include $(CHIBIOS)/os/various/shell/shell.mk
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 include $(CHIBIOS)/ext/littlefs/littlefs.mk
 include $(CHIBIOS)/ext/cJSON/cjson.mk
+include $(CHIBIOS)/ext/regex/re.mk
+include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
+include $(CHIBIOS)/ext/CrashCatcher/crashcatcher.mk
 
 # Define linker script file here
 LDSCRIPT= $(STARTUPLD)/STM32F427xZ.ld
@@ -128,7 +131,7 @@ LDSCRIPT= $(STARTUPLD)/STM32F427xZ.ld
 CSRC = $(ALLCSRC) \
        $(TESTSRC) \
        main.c
-
+	   
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 CPPSRC = $(ALLCPPSRC)
